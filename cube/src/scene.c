@@ -8,6 +8,50 @@
 
 #define LINE_BUFFER_SIZE 1024
 
+//_____________________DRAW_________________________________________________________________
+
+void draw_triangles(const Model* model)
+{
+    int i, k;
+    int vertex_index, texture_index, normal_index;
+    float x, y, z, u, v;
+
+    glBegin(GL_TRIANGLES);
+
+    for (i = 0; i < model->n_triangles; ++i) {
+        for (k = 0; k < 3; ++k) {
+
+            normal_index = model->triangles[i].points[k].normal_index;
+            x = model->normals[normal_index].x;
+            y = model->normals[normal_index].y;
+            z = model->normals[normal_index].z;
+            glNormal3f(x, y, z);
+
+            texture_index = model->triangles[i].points[k].texture_index;
+            u = model->texture_vertices[texture_index].u;
+            v = model->texture_vertices[texture_index].v;
+            glTexCoord2f(u, 1.0 - v);
+
+            vertex_index = model->triangles[i].points[k].vertex_index;
+            x = model->vertices[vertex_index].x;
+            y = model->vertices[vertex_index].y;
+            z = model->vertices[vertex_index].z;
+            glVertex3f(x, y, z);
+        }
+    }
+
+    glEnd();
+}
+
+
+void draw_model(const Model* model)
+{
+    draw_triangles(model);
+}
+
+//_____________________DRAW_________________________________________________________________
+
+
 
 void allocate_model(Model* model)
 {
@@ -253,43 +297,6 @@ int read_elements(Model* model, FILE* file)
 }
 
 
-void draw_model(const Model* model)
-{
-    draw_triangles(model);
-}
-
-void draw_triangles(const Model* model)
-{
-    int i, k;
-    int vertex_index, texture_index, normal_index;
-    float x, y, z, u, v;
-
-    glBegin(GL_TRIANGLES);
-
-    for (i = 0; i < model->n_triangles; ++i) {
-        for (k = 0; k < 3; ++k) {
-
-            normal_index = model->triangles[i].points[k].normal_index;
-            x = model->normals[normal_index].x;
-            y = model->normals[normal_index].y;
-            z = model->normals[normal_index].z;
-            glNormal3f(x, y, z);
-
-            texture_index = model->triangles[i].points[k].texture_index;
-            u = model->texture_vertices[texture_index].u;
-            v = model->texture_vertices[texture_index].v;
-            glTexCoord2f(u, 1.0 - v);
-
-            vertex_index = model->triangles[i].points[k].vertex_index;
-            x = model->vertices[vertex_index].x;
-            y = model->vertices[vertex_index].y;
-            z = model->vertices[vertex_index].z;
-            glVertex3f(x, y, z);
-        }
-    }
-
-    glEnd();
-}
 
 ElementType calc_element_type(const char* text)
 {
@@ -412,6 +419,18 @@ void set_lighting()
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light);
     glLightfv(GL_LIGHT0, GL_POSITION, position);
+    
+
+    float ambient_light1[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    float diffuse_light1[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    float specular_light1[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    float position1[] = { 10.0f, 0.0f, 0.0f, 1.0f }; 
+
+    glEnable(GL_LIGHT1);
+    glLightfv(GL_LIGHT1, GL_AMBIENT, ambient_light1);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse_light1);
+    glLightfv(GL_LIGHT1, GL_SPECULAR, specular_light1);
+    glLightfv(GL_LIGHT1, GL_POSITION, position1);
 }
 
 void set_material(const Material* material)
@@ -450,8 +469,20 @@ void render_scene(const Scene* scene)
     set_material(&(scene->material));
     set_lighting();
     draw_origin();
+
+    // 🔷 Első cube (alapértelmezett helyen, eredeti méretben)
+    glPushMatrix();
     draw_model(&(scene->cube));
+    glPopMatrix();
+
+    // 🔶 Második cube (eltolva és skálázva)
+    glPushMatrix();
+    glTranslatef(0.0f, 2.0f, 0.0f);   // új pozíció
+    // glScalef(50.0f, 50.0f, 50.0f);         // új méret
+    draw_model(&(scene->cube));
+    glPopMatrix();
 }
+
 
 void draw_origin()
 {
