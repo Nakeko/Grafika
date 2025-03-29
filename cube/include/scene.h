@@ -11,6 +11,7 @@ typedef struct Scene
     Model cube;
     Material material;
     GLuint texture_id;
+    GLuint floor_id;
 } Scene;
 
 /**

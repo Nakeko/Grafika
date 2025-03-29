@@ -128,6 +128,12 @@ void handle_app_events(App* app)
             case SDL_SCANCODE_D:
                 set_camera_side_speed(&(app->camera), -1);
                 break;
+            case SDL_SCANCODE_C:
+                set_camera_up_speed(&(app->camera), -1);
+                break;
+            case SDL_SCANCODE_SPACE:
+                set_camera_up_speed(&(app->camera), 1);
+                break;
             default:
                 break;
             }
@@ -141,6 +147,10 @@ void handle_app_events(App* app)
             case SDL_SCANCODE_A:
             case SDL_SCANCODE_D:
                 set_camera_side_speed(&(app->camera), 0);
+                break;
+            case SDL_SCANCODE_C:
+            case SDL_SCANCODE_SPACE:
+                set_camera_up_speed(&(app->camera), 0);
                 break;
             default:
                 break;

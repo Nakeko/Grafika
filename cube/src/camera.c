@@ -13,7 +13,7 @@ void init_camera(Camera* camera)
 {
     camera->position.x = 0.0;
     camera->position.y = 0.0;
-    camera->position.z = 1.0;
+    camera->position.z = 0.4;
     camera->rotation.x = 0.0;
     camera->rotation.y = 0.0;
     camera->rotation.z = 0.0;
@@ -29,6 +29,10 @@ void update_camera(Camera* camera, double time)
     double angle;
     double side_angle;
 
+    float bounds = 0.85f;
+
+    camera->prev_position = camera->position;
+
     angle = degree_to_radian(camera->rotation.z);
     side_angle = degree_to_radian(camera->rotation.z + 90.0);
 
@@ -36,7 +40,16 @@ void update_camera(Camera* camera, double time)
     camera->position.y += sin(angle) * camera->speed.y * time;
     camera->position.x += cos(side_angle) * camera->speed.x * time;
     camera->position.y += sin(side_angle) * camera->speed.x * time;
+    camera->position.z += camera->speed.z * time;
+
+    if (camera->position.x > bounds || camera->position.x < -bounds ||
+        camera->position.y > bounds || camera->position.y < -bounds ||
+        camera->position.z < 0.15f   || camera->position.z > bounds)
+    {
+        camera->position = camera->prev_position;
+    }
 }
+
 
 void set_view(const Camera* camera)
 {
@@ -78,6 +91,11 @@ void set_camera_speed(Camera* camera, double speed)
 void set_camera_side_speed(Camera* camera, double speed)
 {
     camera->speed.x = speed;
+}
+
+void set_camera_up_speed(Camera* camera, double speed)
+{
+    camera->speed.z = speed;
 }
 
 void show_texture_preview()

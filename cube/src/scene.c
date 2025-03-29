@@ -49,6 +49,110 @@ void draw_model(const Model* model)
     draw_triangles(model);
 }
 
+
+
+void wall_front(GLuint texture_id)
+{
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+
+    // Textúra ismétlés engedélyezése
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // Textúra szűrés
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glBegin(GL_QUADS);
+
+    // 🔹 Most minden vertexhez tartozik texcoord is!
+
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(-1.0f, 0.0f, 0.0f);
+
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(1.0f, 0.0f, 0.0f);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(1.0f, 0.0f, 1.0f);
+
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(-1.0f, 0.0f, 1.0f);
+
+    glEnd();
+
+    glDisable(GL_TEXTURE_2D);
+}
+
+void wall_sides(GLuint texture_id)
+{
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+
+    // Textúra ismétlés engedélyezése
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // Textúra szűrés
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glBegin(GL_QUADS);
+
+    // 🔹 Most minden vertexhez tartozik texcoord is!
+
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(0.0f, -1.0f, 0.0f);
+
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(0.0f, 1.0f, 0.0f);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(0.0f, 1.0f, 1.0f);
+
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(0.0f, -1.0f, 1.0f);
+
+    glEnd();
+
+    glDisable(GL_TEXTURE_2D);
+}
+
+
+void draw_floor(GLuint texture_id)
+{
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // 🔧 Szebb textúraszűrés
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBegin(GL_QUADS);
+
+    glTexCoord2f(-1.0f, 1.0f);
+    glVertex3f(-1.0f, 1.0f, 0.0f);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(1.0f, 1.0f, 0.0f);
+
+    glTexCoord2f(1.0f, -1.0f);
+    glVertex3f(1.0f, -1.0f, 0.0f);
+
+    glTexCoord2f(-1.0f, -1.0f);
+    glVertex3f(-1.0f, -1.0f, 0.0f);
+    glEnd();
+
+    glDisable(GL_TEXTURE_2D);
+}
+
+
+
 //_____________________DRAW_________________________________________________________________
 
 
@@ -390,8 +494,12 @@ void init_scene(Scene* scene)
 {
     load_model(&(scene->cube), "assets/models/cube.obj");
     scene->texture_id = load_texture("assets/textures/cube.png");
+    scene->floor_id = load_texture("assets/textures/padlo.jpg");
+
 
     glBindTexture(GL_TEXTURE_2D, scene->texture_id);
+    glBindTexture(GL_TEXTURE_2D, scene->floor_id);
+
 
     scene->material.ambient.red = 0.0;
     scene->material.ambient.green = 0.0;
@@ -466,21 +574,47 @@ void update_scene(Scene* scene)
 
 void render_scene(const Scene* scene)
 {
+    glDisable(GL_LIGHTING); //tesztekre
+    draw_origin();
     set_material(&(scene->material));
     set_lighting();
-    draw_origin();
-
-    // 🔷 Első cube (alapértelmezett helyen, eredeti méretben)
+    glBindTexture(GL_TEXTURE_2D, scene->texture_id);
+    glEnable(GL_TEXTURE_2D);
+    
+    //Walls
     glPushMatrix();
-    draw_model(&(scene->cube));
+    glTranslatef(0.0f, 1.0f, 0.0f);
+    wall_front(scene->floor_id);
     glPopMatrix();
 
-    // 🔶 Második cube (eltolva és skálázva)
     glPushMatrix();
-    glTranslatef(0.0f, 2.0f, 0.0f);   // új pozíció
-    // glScalef(50.0f, 50.0f, 50.0f);         // új méret
-    draw_model(&(scene->cube));
+    glTranslatef(0.0f, -1.0f, 0.0f);
+    wall_front(scene->floor_id);
     glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(1.0f, 0.0f, 0.0f);
+    wall_sides(scene->floor_id);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(-1.0f, 0.0f, 0.0f);
+    wall_sides(scene->floor_id);
+    glPopMatrix();
+
+    //Pad ló - tető
+    glPushMatrix();
+    draw_floor(scene->floor_id);   
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, 1.0f);
+    draw_floor(scene->floor_id);
+    glPopMatrix();
+
+
+
+    glDisable(GL_TEXTURE_2D);
 }
 
 
