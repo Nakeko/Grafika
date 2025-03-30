@@ -1,160 +1,15 @@
 #include "scene.h"
 #include "obj/model.h"
 #include "obj/load.h"
-#include "obj/draw.h"
+#include "draw.c"
 
 #include <GL/gl.h>
 #include <stdlib.h>
 
 #define LINE_BUFFER_SIZE 1024
-
-//_____________________DRAW_________________________________________________________________
-
-void draw_triangles(const Model* model)
-{
-    int i, k;
-    int vertex_index, texture_index, normal_index;
-    float x, y, z, u, v;
-
-    glBegin(GL_TRIANGLES);
-
-    for (i = 0; i < model->n_triangles; ++i) {
-        for (k = 0; k < 3; ++k) {
-
-            normal_index = model->triangles[i].points[k].normal_index;
-            x = model->normals[normal_index].x;
-            y = model->normals[normal_index].y;
-            z = model->normals[normal_index].z;
-            glNormal3f(x, y, z);
-
-            texture_index = model->triangles[i].points[k].texture_index;
-            u = model->texture_vertices[texture_index].u;
-            v = model->texture_vertices[texture_index].v;
-            glTexCoord2f(u, 1.0 - v);
-
-            vertex_index = model->triangles[i].points[k].vertex_index;
-            x = model->vertices[vertex_index].x;
-            y = model->vertices[vertex_index].y;
-            z = model->vertices[vertex_index].z;
-            glVertex3f(x, y, z);
-        }
-    }
-
-    glEnd();
-}
-
-
-void draw_model(const Model* model)
-{
-    draw_triangles(model);
-}
-
-
-
-void wall_front(GLuint texture_id)
-{
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-
-    // Textúra ismétlés engedélyezése
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    // Textúra szűrés
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glBegin(GL_QUADS);
-
-    // 🔹 Most minden vertexhez tartozik texcoord is!
-
-    glTexCoord2f(0.0f, 0.0f);
-    glVertex3f(-1.0f, 0.0f, 0.0f);
-
-    glTexCoord2f(1.0f, 0.0f);
-    glVertex3f(1.0f, 0.0f, 0.0f);
-
-    glTexCoord2f(1.0f, 1.0f);
-    glVertex3f(1.0f, 0.0f, 1.0f);
-
-    glTexCoord2f(0.0f, 1.0f);
-    glVertex3f(-1.0f, 0.0f, 1.0f);
-
-    glEnd();
-
-    glDisable(GL_TEXTURE_2D);
-}
-
-void wall_sides(GLuint texture_id)
-{
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-
-    // Textúra ismétlés engedélyezése
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    // Textúra szűrés
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glBegin(GL_QUADS);
-
-    // 🔹 Most minden vertexhez tartozik texcoord is!
-
-    glTexCoord2f(0.0f, 0.0f);
-    glVertex3f(0.0f, -1.0f, 0.0f);
-
-    glTexCoord2f(1.0f, 0.0f);
-    glVertex3f(0.0f, 1.0f, 0.0f);
-
-    glTexCoord2f(1.0f, 1.0f);
-    glVertex3f(0.0f, 1.0f, 1.0f);
-
-    glTexCoord2f(0.0f, 1.0f);
-    glVertex3f(0.0f, -1.0f, 1.0f);
-
-    glEnd();
-
-    glDisable(GL_TEXTURE_2D);
-}
-
-
-void draw_floor(GLuint texture_id)
-{
-
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    // 🔧 Szebb textúraszűrés
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glBegin(GL_QUADS);
-
-    glTexCoord2f(-1.0f, 1.0f);
-    glVertex3f(-1.0f, 1.0f, 0.0f);
-
-    glTexCoord2f(1.0f, 1.0f);
-    glVertex3f(1.0f, 1.0f, 0.0f);
-
-    glTexCoord2f(1.0f, -1.0f);
-    glVertex3f(1.0f, -1.0f, 0.0f);
-
-    glTexCoord2f(-1.0f, -1.0f);
-    glVertex3f(-1.0f, -1.0f, 0.0f);
-    glEnd();
-
-    glDisable(GL_TEXTURE_2D);
-}
-
-
-
-//_____________________DRAW_________________________________________________________________
-
+float light_intensity = 1.0f; 
+bool is_rotating = false;
+static float rotation_angle = 0.0f;
 
 
 void allocate_model(Model* model)
@@ -492,9 +347,15 @@ int is_numeric(char c)
 
 void init_scene(Scene* scene)
 {
-    load_model(&(scene->cube), "assets/models/cube.obj");
-    scene->texture_id = load_texture("assets/textures/cube.png");
-    scene->floor_id = load_texture("assets/textures/padlo.jpg");
+    load_model(&(scene->stand), "assets/models/WORLD.obj");
+    load_model(&(scene->round), "assets/models/golo.obj");
+    scene->texture_id = load_texture("assets/textures/fold.jpg");
+    scene->floor_id = load_texture("assets/textures/fal.jpg");
+    scene->wood_id = load_texture("assets/textures/padlo.jpg");
+    scene->help_id = load_texture("assets/textures/help.png");
+    scene->need_help=false;
+
+    
 
 
     glBindTexture(GL_TEXTURE_2D, scene->texture_id);
@@ -518,28 +379,42 @@ void init_scene(Scene* scene)
 
 void set_lighting()
 {
-    float ambient_light[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-    float diffuse_light[] = { 1.0f, 1.0f, 1.0, 1.0f };
-    float specular_light[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-    float position[] = { 0.0f, 0.0f, 10.0f, 1.0f };
+    float ambient_light[]  = { 0.1f, 0.1f, 0.1f, 1.0f };
+    float diffuse_light[]  = { light_intensity, light_intensity, light_intensity, 1.0f };
+    float specular_light[] = { light_intensity * 0.2f, light_intensity * 0.2f, light_intensity * 0.2f, 1.0f };
 
+    float position[]  = { -2.0f, -2.0f, 0.4f, 1.0f };
+    float position2[] = {  1.0f,  1.0f, 0.4f, 1.0f };
+    float position3[] = {  1.0f, -2.0f, 0.4f, 1.0f };
+    float position4[] = { -2.0f,  1.0f, 0.4f, 1.0f };
+
+    glEnable(GL_LIGHT0);
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient_light);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light);
     glLightfv(GL_LIGHT0, GL_POSITION, position);
-    
-
-    float ambient_light1[] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    float diffuse_light1[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    float specular_light1[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-    float position1[] = { 10.0f, 0.0f, 0.0f, 1.0f }; 
 
     glEnable(GL_LIGHT1);
-    glLightfv(GL_LIGHT1, GL_AMBIENT, ambient_light1);
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse_light1);
-    glLightfv(GL_LIGHT1, GL_SPECULAR, specular_light1);
-    glLightfv(GL_LIGHT1, GL_POSITION, position1);
+    glLightfv(GL_LIGHT1, GL_AMBIENT, ambient_light);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse_light);
+    glLightfv(GL_LIGHT1, GL_SPECULAR, specular_light);
+    glLightfv(GL_LIGHT1, GL_POSITION, position2);
+
+    glEnable(GL_LIGHT2);
+    glLightfv(GL_LIGHT2, GL_AMBIENT, ambient_light);
+    glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse_light);
+    glLightfv(GL_LIGHT2, GL_SPECULAR, specular_light);
+    glLightfv(GL_LIGHT2, GL_POSITION, position3);
+
+    glEnable(GL_LIGHT3);
+    glLightfv(GL_LIGHT3, GL_AMBIENT, ambient_light);
+    glLightfv(GL_LIGHT3, GL_DIFFUSE, diffuse_light);
+    glLightfv(GL_LIGHT3, GL_SPECULAR, specular_light);
+    glLightfv(GL_LIGHT3, GL_POSITION, position4);
 }
+
+
+
 
 void set_material(const Material* material)
 {
@@ -570,17 +445,67 @@ void set_material(const Material* material)
 
 void update_scene(Scene* scene)
 {
+    if (is_rotating) {
+        rotation_angle += 0.05f; 
+        if (rotation_angle > 360.0f) {
+            rotation_angle -= 360.0f;
+        }
+    }
 }
+
+void apply_shadow_matrix()
+{
+    GLfloat shadow_mat[16] = {
+        1, 0, 0, 0,
+        0, 1, 0, 0,  
+        0, 0, 0, 0,
+        0, 0, 0, 1
+    };
+
+    glMultMatrixf(shadow_mat);
+}
+
 
 void render_scene(const Scene* scene)
 {
-    glDisable(GL_LIGHTING); //tesztekre
-    draw_origin();
+    //glDisable(GL_LIGHTING); //tesztekre
+    //draw_origin();
     set_material(&(scene->material));
     set_lighting();
-    glBindTexture(GL_TEXTURE_2D, scene->texture_id);
     glEnable(GL_TEXTURE_2D);
-    
+
+    glPushMatrix();
+    glScalef(0.2f,0.2f,0.2f);
+    glBindTexture(GL_TEXTURE_2D, scene->wood_id);
+    draw_model(&(scene->stand));
+    glPopMatrix();
+
+    //shadow
+    glPushMatrix();
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+
+    glColor4f(0.0f, 0.0f, 0.0f, 0.5f); 
+
+    glTranslatef(0.0f, 0.0f, 0.01f);
+    apply_shadow_matrix();
+
+    glScalef(0.25f, 0.2f, 0.25f); 
+    draw_model(&(scene->stand));
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_TEXTURE_2D);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, 0.41f);
+    glScalef(0.135f,0.135f,0.135f);
+    glRotatef(rotation_angle, 0.0f, 0.0f, 1.0f);
+    glBindTexture(GL_TEXTURE_2D, scene->texture_id);
+    draw_model(&(scene->round));
+    glPopMatrix();
+
     //Walls
     glPushMatrix();
     glTranslatef(0.0f, 1.0f, 0.0f);
@@ -612,6 +537,9 @@ void render_scene(const Scene* scene)
     draw_floor(scene->floor_id);
     glPopMatrix();
 
+    if (scene->need_help) {
+        draw_help_overlay(scene->help_id);
+    }    
 
 
     glDisable(GL_TEXTURE_2D);

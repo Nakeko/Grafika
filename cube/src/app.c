@@ -5,6 +5,9 @@
 
 #include <SDL2/SDL_image.h>
 
+extern float light_intensity;
+extern bool is_rotating;
+
 void init_app(App* app, int width, int height)
 {
     int error_code;
@@ -134,6 +137,24 @@ void handle_app_events(App* app)
             case SDL_SCANCODE_SPACE:
                 set_camera_up_speed(&(app->camera), 1);
                 break;
+            case SDL_SCANCODE_KP_PLUS:
+                if (light_intensity < 3.0f) {
+                light_intensity += 0.1f;
+                }
+                break;   
+            case SDL_SCANCODE_KP_MINUS:
+                if (light_intensity > 0.0f) {
+                light_intensity -= 0.1f;
+                }
+                break;
+                case SDL_SCANCODE_E:
+                    is_rotating = !is_rotating; 
+                    break;
+                case SDL_SCANCODE_H:
+                    app->scene.need_help = !app->scene.need_help;
+                    break;
+                
+
             default:
                 break;
             }

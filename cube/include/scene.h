@@ -8,10 +8,15 @@
 
 typedef struct Scene
 {
+    Model stand;
     Model cube;
+    Model round;
     Material material;
     GLuint texture_id;
     GLuint floor_id;
+    GLuint wood_id;
+    GLuint help_id;
+    bool need_help;
 } Scene;
 
 /**

@@ -42,12 +42,12 @@ void update_camera(Camera* camera, double time)
     camera->position.y += sin(side_angle) * camera->speed.x * time;
     camera->position.z += camera->speed.z * time;
 
-    if (camera->position.x > bounds || camera->position.x < -bounds ||
-        camera->position.y > bounds || camera->position.y < -bounds ||
+      if (camera->position.x > bounds || camera->position.x < -bounds ||
+       camera->position.y > bounds || camera->position.y < -bounds ||
         camera->position.z < 0.15f   || camera->position.z > bounds)
     {
         camera->position = camera->prev_position;
-    }
+    } 
 }
 
 
